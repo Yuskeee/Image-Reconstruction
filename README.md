@@ -10,6 +10,16 @@ O projeto é dividido em duas frentes:
 
 Para visualizar a aplicação corretamente, é necessário rodar ambas as instâncias (servidor Swift e cliente React) localmente no seu terminal.
 
+### 0. Baixando Arquivos Pesados (Git LFS)
+As matrizes matemáticas e os vetores de sinal (`.csv`) pesam centenas de megabytes e são versionados usando o **Git LFS**. Antes de mais nada, é obrigatório baixar o conteúdo real desses arquivos para não quebrar a aplicação.
+
+1. Na raiz do projeto, instale os ganchos do LFS (se já não tiver) e baixe os arquivos pesados:
+   ```bash
+   git lfs install
+   git lfs pull
+   ```
+*(Caso esse passo seja ignorado, o git fará o download apenas dos ponteiros de texto minúsculos, o que fará o Servidor e o React travarem com falhas de JSON "Not a Number").*
+
 ### 1. Rodando o Servidor Swift (Backend)
 O backend recebe as matrizes numéricas e as processa. É importante iniciá-lo primeiro.
 
