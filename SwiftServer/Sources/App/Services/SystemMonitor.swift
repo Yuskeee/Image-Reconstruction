@@ -14,10 +14,8 @@ actor SystemMonitor {
     private var history: [SystemMetrics] = []
     
     // Limits
-    private let cpuThreshold = 80.0
-    private let memoryThreshold = 80.0
-    private let absoluteMaxWorkers = 4
-    private let fallbackMinWorkers = 1
+    private let absoluteMaxWorkers = 20
+    private let minWorkers = 1
     
     // Mach state for CPU
     private var previousInfo = host_cpu_load_info()
@@ -43,11 +41,19 @@ actor SystemMonitor {
         let cpuPercent = cpu * 100.0
         let memPercent = mem * 100.0
         
-        // Determine allowed workers
+        // Define fallback dinâmico proporcional à carga
+        let maxLoad = max(cpuPercent, memPercent)
         var allowed = absoluteMaxWorkers
-        if cpuPercent > cpuThreshold || memPercent > memoryThreshold {
-            allowed = fallbackMinWorkers
+        
+        if maxLoad >= 50.0 {
+            // Exemplo: se maxLoad = 80%, safeRatio = (100 - 80)/50 = 0.4
+            // 20 * 0.4 = 8 workers
+            let safeRatio = (100.0 - maxLoad) / 50.0
+            allowed = Int(Double(absoluteMaxWorkers) * safeRatio)
         }
+        
+        // Garante que o limite fique entre minWorkers (1) e absoluteMaxWorkers (20)
+        allowed = max(minWorkers, min(allowed, absoluteMaxWorkers))
         
         let metric = SystemMetrics(
             timestamp: Date(),

@@ -35,7 +35,7 @@ func routes(_ app: Application) throws {
                     type: 'line',
                     data: { labels: [], datasets: [
                         { label: 'CPU %', data: [], borderColor: '#f87171', backgroundColor: '#f8717155', fill: true },
-                        { label: 'Max Workers (4 = 100%)', data: [], borderColor: '#60a5fa', backgroundColor: 'transparent', borderDash: [5, 5] }
+                        { label: 'Max Workers (20 = 100%)', data: [], borderColor: '#60a5fa', backgroundColor: 'transparent', borderDash: [5, 5] }
                     ]},
                     options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
                 });
@@ -54,7 +54,7 @@ func routes(_ app: Application) throws {
                     const labels = data.map(d => new Date(d.timestamp).toLocaleTimeString());
                     const cpu = data.map(d => d.cpuPercent);
                     const mem = data.map(d => d.memoryPercent);
-                    const maxWorkers = data.map(d => d.maxWorkersAllowed * 25);
+                    const maxWorkers = data.map(d => d.maxWorkersAllowed * 5);
                     
                     cpuChart.data.labels = labels;
                     cpuChart.data.datasets[0].data = cpu;
