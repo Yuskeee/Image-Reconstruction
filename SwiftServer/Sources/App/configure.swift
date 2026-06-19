@@ -43,6 +43,7 @@ public func configure(_ app: Application) throws {
     Task {
         do {
             await LogStore.shared.add("Iniciando pre-loading das matrizes em background...")
+            await SystemMonitor.shared.startMonitoring()
             _ = try await MatrixManager.shared.getMatrix(named: "H-1")
             _ = try await MatrixManager.shared.getMatrix(named: "H-2")
             await LogStore.shared.add("Pre-loading concluído. Ambas as matrizes estão na memória.")
