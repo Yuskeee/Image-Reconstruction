@@ -42,9 +42,9 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({ data }) => {
     for (let i = 0; i < data.length; i++) {
       const val = data[i];
       const normalized = range === 0 ? 0.5 : (val - min) / range;
-      const hue = (1.0 - normalized) * 240; 
+      const gray = Math.floor(normalized * 255); 
       
-      ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+      ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
       
       const x = i % gridSize;
       const y = Math.floor(i / gridSize);

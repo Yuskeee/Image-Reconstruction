@@ -7,7 +7,7 @@ function App() {
   const [results, setResults] = useState<ReconstructionResult[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
 
-  const handleSignalSent = (id: string, signalFile: string, gain: number) => {
+  const handleSignalSent = (id: string, signalFile: string, gain: string) => {
     setPendingRequests(prev => [{ id, signalFile, gain }, ...prev]);
   };
 

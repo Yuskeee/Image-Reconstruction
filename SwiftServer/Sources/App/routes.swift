@@ -4,6 +4,77 @@ func routes(_ app: Application) throws {
     app.get("logs") { req async -> [String] in
         return await LogStore.shared.getAll()
     }
+    
+    app.get("monitor", "metrics") { req async -> [SystemMetrics] in
+        return await SystemMonitor.shared.getMetricsHistory()
+    }
+    
+    app.get("monitor") { req async -> Response in
+        let html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Server Monitor</title>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <style>
+                body { background-color: #121214; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+                .chart-container { width: 80%; height: 400px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <h1>System Monitor</h1>
+            <div class="chart-container">
+                <canvas id="cpuChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="memChart"></canvas>
+            </div>
+            <script>
+                const ctxCpu = document.getElementById('cpuChart').getContext('2d');
+                const cpuChart = new Chart(ctxCpu, {
+                    type: 'line',
+                    data: { labels: [], datasets: [
+                        { label: 'CPU %', data: [], borderColor: '#f87171', backgroundColor: '#f8717155', fill: true },
+                        { label: 'Max Workers (20 = 100%)', data: [], borderColor: '#60a5fa', backgroundColor: 'transparent', borderDash: [5, 5] }
+                    ]},
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
+                });
+
+                const ctxMem = document.getElementById('memChart').getContext('2d');
+                const memChart = new Chart(ctxMem, {
+                    type: 'line',
+                    data: { labels: [], datasets: [{ label: 'Memory %', data: [], borderColor: '#34d399', backgroundColor: '#34d39955', fill: true }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
+                });
+
+                async function fetchMetrics() {
+                    const res = await fetch('/monitor/metrics');
+                    const data = await res.json();
+                    
+                    const labels = data.map(d => new Date(d.timestamp).toLocaleTimeString());
+                    const cpu = data.map(d => d.cpuPercent);
+                    const mem = data.map(d => d.memoryPercent);
+                    const maxWorkers = data.map(d => d.maxWorkersAllowed * 5);
+                    
+                    cpuChart.data.labels = labels;
+                    cpuChart.data.datasets[0].data = cpu;
+                    cpuChart.data.datasets[1].data = maxWorkers;
+                    cpuChart.update();
+
+                    memChart.data.labels = labels;
+                    memChart.data.datasets[0].data = mem;
+                    memChart.update();
+                }
+
+                setInterval(fetchMetrics, 1000);
+            </script>
+        </body>
+        </html>
+        """
+        var headers = HTTPHeaders()
+        headers.add(name: .contentType, value: "text/html")
+        return Response(status: .ok, headers: headers, body: .init(string: html))
+    }
 
     app.webSocket("reconstruct", maxFrameSize: WebSocketMaxFrameSize(integerLiteral: 1 << 24)) { req, ws in
         ws.onText { ws, text in
@@ -55,6 +126,10 @@ func routes(_ app: Application) throws {
                     var image: [Float] = []
                     let message = "Success"
                     
+                    await LogStore.shared.add("Aguardando liberação do ReconstructionQueue...")
+                    await ReconstructionQueue.shared.enqueue()
+                    await LogStore.shared.add("Processamento \(algorithm) autorizado.")
+                    
                     if algorithm == "CGNE" {
                         let result = CGNE.solve(g: signal, H: matrix)
                         image = result.image
@@ -66,6 +141,7 @@ func routes(_ app: Application) throws {
                         iterations = result.iterations
                         finalError = result.finalError
                     } else {
+                        await ReconstructionQueue.shared.dequeue()
                         let msg = "Unknown algorithm: \(algorithm)"
                         await LogStore.shared.add("Erro: \(msg)")
                         let errorMsg = ReconstructionError(error: true, reason: msg)
@@ -74,6 +150,8 @@ func routes(_ app: Application) throws {
                         try await ws.close()
                         return
                     }
+                    
+                    await ReconstructionQueue.shared.dequeue()
                     
                     let endTime = Date()
                     await LogStore.shared.add("Algoritmo \(algorithm) finalizado em \(iterations) iterações com erro de \(finalError).")

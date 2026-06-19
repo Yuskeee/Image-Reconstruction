@@ -4,7 +4,7 @@ import { requestReconstruction } from '../services/api';
 import type { ReconstructionResult } from './Report';
 
 interface SignalManagerProps {
-  onSignalSent: (id: string, signalFile: string, gain: number) => void;
+  onSignalSent: (id: string, signalFile: string, gain: string) => void;
   onResultReceived: (result: ReconstructionResult) => void;
 }
 
@@ -47,11 +47,18 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
       const randomGain = Math.random() * 10; // Gain entre 0 e 10
       
       const baseSignal = await loadSignalFromFile(randomFile);
-      const signal = baseSignal.map(val => val * randomGain);
+      
+      // Aplica a fórmula do ganho vetorial multiplicada pelo ganho aleatório base
+      const signal = baseSignal.map((val, index) => {
+        const l = index + 1; // 1-indexed formula
+        const gamma = 100 + (1 / 20) * l * Math.sqrt(l);
+        return val * randomGain * gamma;
+      });
       
       const uniqueId = Math.random().toString(36).substring(2, 9);
+      const gainStr = randomGain.toFixed(2);
 
-      onSignalSent(uniqueId, randomFile, randomGain);
+      onSignalSent(uniqueId, randomFile, gainStr);
 
       // Dispara para ambos algoritmos simultaneamente
       const [resultCGNE, resultCGNR] = await Promise.allSettled([
@@ -65,7 +72,7 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
         })
       ]);
       
-      const extraInfo = { id: uniqueId, signalFile: randomFile, gain: randomGain };
+      const extraInfo = { id: uniqueId, signalFile: randomFile, gain: gainStr };
 
       if (resultCGNE.status === 'fulfilled') {
         onResultReceived({ ...resultCGNE.value, ...extraInfo });
