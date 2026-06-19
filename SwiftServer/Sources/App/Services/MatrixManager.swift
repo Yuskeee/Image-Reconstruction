@@ -18,7 +18,7 @@ public actor MatrixManager {
             return matrix
         }
         
-        let path = "Dados/\(name).csv"
+        let path = "../Data/\(name).csv"
         guard let filePointer = fopen(path, "r") else {
             throw MatrixError.notFound(name)
         }
