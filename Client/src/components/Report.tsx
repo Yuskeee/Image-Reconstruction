@@ -13,18 +13,16 @@ export interface ReconstructionResult {
   finalError: number;
   message: string;
   signalFile?: string;
-  gain?: number;
 }
 
 export interface PendingRequest {
   id: string;
   signalFile: string;
-  gain: number;
 }
 
 interface ReportProps {
   results: ReconstructionResult[];
-  pending?: PendingRequest[];
+  pending: PendingRequest[];
 }
 
 const Report: React.FC<ReportProps> = ({ results, pending = [] }) => {
@@ -55,7 +53,7 @@ const Report: React.FC<ReportProps> = ({ results, pending = [] }) => {
                 <p className="text-xs text-zinc-500 mt-0.5">
                   ID: <span className="font-mono text-zinc-400">{req.id}</span> | 
                   File: <span className="font-mono text-zinc-400">{req.signalFile}</span> | 
-                  Gain: <span className="font-mono text-zinc-400">{req.gain.toFixed(2)}</span>
+                  Gain: <span className="font-mono text-zinc-400">{req.gain}</span>
                 </p>
               </div>
             </div>
@@ -97,7 +95,8 @@ const Report: React.FC<ReportProps> = ({ results, pending = [] }) => {
                     <p className="text-xs text-zinc-500 font-mono">
                       ID: {res.id} 
                       {res.signalFile && ` | File: ${res.signalFile}`}
-                      {res.gain !== undefined && ` | Gain: ${res.gain.toFixed(2)}`}
+                      <br/>
+                      {res.gain && `Gain: ${res.gain}`}
                     </p>
                   </div>
                   {res.message === 'Success' ? (
