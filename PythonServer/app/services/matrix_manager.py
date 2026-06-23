@@ -1,5 +1,6 @@
 import numpy as np
 
+# arquivo que gera e gerencia as matrizes
 class MatrixManager:
     def __init__(self):
         self._cache = {}
@@ -9,7 +10,7 @@ class MatrixManager:
     def load(self, name: str):
         path = f"{self._data_path}{name}.csv"
 
-        self._cache[name] = np.loadtxt(path, delimiter=';', dtype=np.float32)
+        self._cache[name] = np.loadtxt(path, delimiter=',', dtype=np.float32)
         return self._cache[name]
     
     # checa se a matriz está no cache, caso não esteja, carrega a matriz
