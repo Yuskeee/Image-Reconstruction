@@ -61,7 +61,7 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
       onSignalSent(uniqueId, randomFile, gainStr);
 
       // Dispara para ambos algoritmos simultaneamente
-      const [resultCGNE, resultCGNR] = await Promise.allSettled([
+      const [swiftCGNE, swiftCGNR] = await Promise.allSettled([
         requestReconstruction({
           algorithm: 'CGNE',
           signal,
@@ -71,19 +71,44 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
           signal,
         })
       ]);
+
+      const [pythonCGNE, pythonCGNR] = await Promise.allSettled([
+        requestReconstruction({
+          algorithm: 'CGNE',
+          signal},
+          "ws://127.0.0.1:8000/reconstruct"
+        ),
+        requestReconstruction({
+          algorithm: 'CGNR',
+          signal},
+          "ws://127.0.0.1:8000/reconstruct"
+        )
+      ]);
       
       const extraInfo = { id: uniqueId, signalFile: randomFile, gain: gainStr };
 
-      if (resultCGNE.status === 'fulfilled') {
-        onResultReceived({ ...resultCGNE.value, ...extraInfo });
+      if (swiftCGNE.status === 'fulfilled') {
+        onResultReceived({ ...swiftCGNE.value, ...extraInfo, server: 'Swift' });
       } else {
-        console.error('[SignalManager] Erro no CGNE:', resultCGNE.reason);
+        console.error('[SignalManager] Erro no CGNE:', swiftCGNE.reason);
       }
 
-      if (resultCGNR.status === 'fulfilled') {
-        onResultReceived({ ...resultCGNR.value, ...extraInfo });
+      if (swiftCGNR.status === 'fulfilled') {
+        onResultReceived({ ...swiftCGNR.value, ...extraInfo, server: 'Swift' });
       } else {
-        console.error('[SignalManager] Erro no CGNR:', resultCGNR.reason);
+        console.error('[SignalManager] Erro no CGNR:', swiftCGNR.reason);
+      }
+
+      if (pythonCGNE.status === 'fulfilled') {
+        onResultReceived({ ...pythonCGNE.value, ...extraInfo, server: 'Python' });
+      } else {
+        console.error('[SignalManager] Erro no CGNE:', pythonCGNE.reason);
+      }
+
+      if (pythonCGNR.status === 'fulfilled') {
+        onResultReceived({ ...pythonCGNR.value, ...extraInfo, server: 'Python' });
+      } else {
+        console.error('[SignalManager] Erro no CGNR:', pythonCGNR.reason);
       }
 
       console.log(`[SignalManager] Transações concluídas usando ${randomFile}. ID: ${uniqueId}`);

@@ -3,9 +3,9 @@ export interface ReconstructRequest {
   signal: number[];
 }
 
-export const requestReconstruction = (data: ReconstructRequest): Promise<any> => {
+export const requestReconstruction = (data: ReconstructRequest, url: string = "ws://127.0.0.1:8080/reconstruct"): Promise<any> => {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket("ws://127.0.0.1:8080/reconstruct");
+    const ws = new WebSocket(url);
 
     ws.onopen = () => {
       ws.send(JSON.stringify(data));

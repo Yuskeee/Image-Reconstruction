@@ -13,6 +13,7 @@ export interface ReconstructionResult {
   finalError: number;
   message: string;
   signalFile?: string;
+  server: 'Swift' | 'Python';
 }
 
 export interface PendingRequest {
@@ -90,6 +91,9 @@ const Report: React.FC<ReportProps> = ({ results, pending = [] }) => {
                     <h3 className="text-sm font-medium text-zinc-200 mb-1 flex items-center gap-2">
                       <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-xs border border-zinc-700/50">
                         {res.algorithm}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-xs border border-zinc-700/50">
+                        {res.server}
                       </span>
                     </h3>
                     <p className="text-xs text-zinc-500 font-mono">
