@@ -4,6 +4,7 @@ import Report from './components/Report';
 import Dashboard from './components/Dashboard';
 import KPICards from './components/KPICards';
 import type { RunStats } from './components/Dashboard';
+import { laplacianVariance } from './services/metrics';
 import type { ReconstructionResult, PendingRequest } from './components/Report';
 
 const emptyStats = (): RunStats => ({ count: 0, timesMs: [], cgneSharpnesses: [], cgnrSharpnesses: [] });
@@ -23,6 +24,10 @@ function App() {
     setTimeout(() => {
       setPendingRequests(prev => prev.filter(req => req.id !== result.id));
     }, 500);
+
+    // calcula sharpness no cliente a partir da imagem reconstruída
+    const sharpness = laplacianVariance(result.image, result.imageSize);
+    const enrichedResult = { ...result, sharpness };
 
     // calcula a duração da reconstrução e acumula nas stats do servidor correspondente
     const timeMs = new Date(result.endTime).getTime() - new Date(result.startTime).getTime();
