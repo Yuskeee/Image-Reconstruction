@@ -11,6 +11,7 @@ export interface ReconstructionResult {
   iterations: number;
   image: number[];
   finalError: number;
+  sharpness?: number;
   message: string;
   signalFile?: string;
   server: 'Swift' | 'Python';
@@ -128,6 +129,13 @@ const Report: React.FC<ReportProps> = ({ results, pending = [] }) => {
                     <span className="text-[10px] uppercase tracking-wider text-zinc-500">Final Error</span>
                     <span className="font-mono text-xs text-zinc-400">{res.finalError.toExponential(4)}</span>
                   </div>
+
+                  {res.sharpness !== undefined && (
+                    <div className="col-span-2 flex justify-between items-center">
+                      <span className="text-[10px] uppercase tracking-wider text-zinc-500">Sharpness</span>
+                      <span className="font-mono text-xs text-zinc-400">{res.sharpness.toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

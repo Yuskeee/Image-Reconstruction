@@ -13,6 +13,7 @@ struct ReconstructionResponse: Content {
     let iterations: Int
     let image: [Float] // Vector f
     let finalError: Float
+    let sharpness: Float // variância do Laplaciano — métrica de nitidez
     let message: String
 }
 

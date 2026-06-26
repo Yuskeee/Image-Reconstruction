@@ -9,6 +9,7 @@ import time
 from app.services.matrix_manager import matrix_manager
 from app.services.cgne import cgne
 from app.services.cgnr import cgnr
+from app.services.metrics import laplacian_variance
 
 # arquivo que gera e gerencia o servidor
 @asynccontextmanager
@@ -60,6 +61,8 @@ async def websocket(websocket: WebSocket):
     t1 = time.perf_counter() # marca o tempo de término da execução do algoritmo em alta resolução
     end_time = datetime.now(timezone.utc) # marca o tempo de término da execução do algoritmo em UTC
 
+    sharpness = laplacian_variance(f) # calcula a métrica de nitidez da imagem reconstruída
+
     response = {
         "algorithm": algorithm,
         "startTime": start_time.isoformat(),
@@ -68,6 +71,7 @@ async def websocket(websocket: WebSocket):
         "iterations": iterations,
         "image": f.tolist(), # converte o array numpy em uma lista para enviar como JSON
         "finalError": float(final_error),
+        "sharpness": sharpness, # variância do Laplaciano — métrica de nitidez
         "message": "Success"
     }
 

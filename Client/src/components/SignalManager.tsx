@@ -6,9 +6,10 @@ import type { ReconstructionResult } from './Report';
 interface SignalManagerProps {
   onSignalSent: (id: string, signalFile: string, gain: string) => void;
   onResultReceived: (result: ReconstructionResult) => void;
+  onRunningChange?: (running: boolean) => void;
 }
 
-const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultReceived }) => {
+const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultReceived, onRunningChange }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [signalFiles, setSignalFiles] = useState('A-60x60-1.csv, G-1.csv, G-2.csv, A-30x30-1.csv, g-30x30-1.csv, g-30x30-2.csv');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -161,7 +162,11 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
 
       <div className="shrink-0 mt-4 md:mt-0">
         <button
-          onClick={() => setIsRunning(!isRunning)}
+          onClick={() => {
+            const next = !isRunning;
+            setIsRunning(next);
+            onRunningChange?.(next);
+          }}
           className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-colors ${
             isRunning 
               ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
