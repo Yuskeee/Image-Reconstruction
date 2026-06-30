@@ -119,13 +119,15 @@ actor SystemMonitor {
         var pageSize: vm_size_t = 0
         host_page_size(mach_host_self(), &pageSize)
         
-        let active = UInt64(info64.active_count)
-        let wire = UInt64(info64.wire_count)
-        let spec = UInt64(info64.speculative_count)
+        let inactive = UInt64(info64.inactive_count)
+        let free = UInt64(info64.free_count)
         
-        let usedBytes = (active + wire + spec) * UInt64(pageSize)
+        // No macOS, o 'psutil.virtual_memory().percent' calcula a porcentagem
+        // baseado na memória disponível (free + inactive).
+        let availableBytes = (inactive + free) * UInt64(pageSize)
         let total = ProcessInfo.processInfo.physicalMemory
+        let usedBytesForPercent = total > availableBytes ? total - availableBytes : 0
         
-        return Double(usedBytes) / Double(total)
+        return Double(usedBytesForPercent) / Double(total)
     }
 }

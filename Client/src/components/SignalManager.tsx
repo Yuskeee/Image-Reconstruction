@@ -14,6 +14,7 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
   const [signalFiles, setSignalFiles] = useState('A-60x60-1.csv, G-1.csv, G-2.csv, A-30x30-1.csv, g-30x30-1.csv, g-30x30-2.csv');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isRunningRef = useRef(isRunning);
+  const signalCountRef = useRef(0);
 
   useEffect(() => {
     isRunningRef.current = isRunning;
@@ -39,103 +40,95 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
     return signal;
   };
 
-  const triggerSignal = async () => {
-    if (!isRunningRef.current || files.length === 0) return;
-
+  const sendSignalToBackend = async (
+    item: { file: string; gain: number; interval: number },
+    server: 'Python' | 'Swift',
+    count: number
+  ) => {
     try {
-      // Sorteia o arquivo de sinal
-      const randomFile = files[Math.floor(Math.random() * files.length)];
-      const randomGain = Math.random() * 10; // Gain entre 0 e 10
+      const baseSignal = await loadSignalFromFile(item.file);
       
-      const baseSignal = await loadSignalFromFile(randomFile);
-      
-      // Aplica a fórmula do ganho vetorial multiplicada pelo ganho aleatório base
       const signal = baseSignal.map((val, index) => {
         const l = index + 1; // 1-indexed formula
         const gamma = 100 + (1 / 20) * l * Math.sqrt(l);
-        return val * randomGain * gamma;
+        return val * item.gain * gamma;
       });
       
       const uniqueId = Math.random().toString(36).substring(2, 9);
-      const gainStr = randomGain.toFixed(2);
+      const gainStr = item.gain.toFixed(2);
 
-      onSignalSent(uniqueId, randomFile, gainStr);
+      onSignalSent(uniqueId, item.file, gainStr);
 
-      // Dispara para ambos algoritmos simultaneamente
-      const [swiftCGNE, swiftCGNR] = await Promise.allSettled([
-        requestReconstruction({
-          algorithm: 'CGNE',
-          signal,
-        }),
-        requestReconstruction({
-          algorithm: 'CGNR',
-          signal,
-        })
-      ]);
+      const url = server === 'Python' ? "ws://127.0.0.1:8000/reconstruct" : "ws://127.0.0.1:8080/reconstruct";
 
-      const [pythonCGNE, pythonCGNR] = await Promise.allSettled([
-        requestReconstruction({
-          algorithm: 'CGNE',
-          signal},
-          "ws://127.0.0.1:8000/reconstruct"
-        ),
-        requestReconstruction({
-          algorithm: 'CGNR',
-          signal},
-          "ws://127.0.0.1:8000/reconstruct"
-        )
+      const [resCGNE, resCGNR] = await Promise.allSettled([
+        requestReconstruction({ algorithm: 'CGNE', signal }, url),
+        requestReconstruction({ algorithm: 'CGNR', signal }, url)
       ]);
       
-      const extraInfo = { id: uniqueId, signalFile: randomFile, gain: gainStr };
+      const extraInfo = { id: uniqueId, signalFile: item.file, gain: gainStr, server };
 
-      if (swiftCGNE.status === 'fulfilled') {
-        onResultReceived({ ...swiftCGNE.value, ...extraInfo, server: 'Swift' });
+      if (resCGNE.status === 'fulfilled') {
+        onResultReceived({ ...resCGNE.value, ...extraInfo });
       } else {
-        console.error('[SignalManager] Erro no CGNE:', swiftCGNE.reason);
+        console.error(`[SignalManager] Erro no CGNE (${server}):`, resCGNE.reason);
       }
 
-      if (swiftCGNR.status === 'fulfilled') {
-        onResultReceived({ ...swiftCGNR.value, ...extraInfo, server: 'Swift' });
+      if (resCGNR.status === 'fulfilled') {
+        onResultReceived({ ...resCGNR.value, ...extraInfo });
       } else {
-        console.error('[SignalManager] Erro no CGNR:', swiftCGNR.reason);
+        console.error(`[SignalManager] Erro no CGNR (${server}):`, resCGNR.reason);
       }
 
-      if (pythonCGNE.status === 'fulfilled') {
-        onResultReceived({ ...pythonCGNE.value, ...extraInfo, server: 'Python' });
-      } else {
-        console.error('[SignalManager] Erro no CGNE:', pythonCGNE.reason);
-      }
-
-      if (pythonCGNR.status === 'fulfilled') {
-        onResultReceived({ ...pythonCGNR.value, ...extraInfo, server: 'Python' });
-      } else {
-        console.error('[SignalManager] Erro no CGNR:', pythonCGNR.reason);
-      }
-
-      console.log(`[SignalManager] Transações concluídas usando ${randomFile}. ID: ${uniqueId}`);
+      console.log(`[SignalManager] Transações concluídas (${server}) usando ${item.file}. ID: ${uniqueId} (${count}/50)`);
     } catch (error) {
       console.error('[SignalManager] Erro inesperado ao enviar sinais:', error);
     }
-
-    if (!isRunningRef.current) return;
-
-    // Agenda o próximo envio com tempo aleatório entre 1s e 5s
-    const nextInterval = Math.random() * 4000 + 1000;
-    timeoutRef.current = setTimeout(triggerSignal, nextInterval);
   };
 
-  useEffect(() => {
-    if (isRunning) {
-      triggerSignal();
-    } else {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+  const runSequence = async () => {
+    if (files.length === 0) return;
+    
+    setIsRunning(true);
+    isRunningRef.current = true;
+    
+    // 1. Pré-gerar a sequência de 50 sinais para garantir tempos e ganhos idênticos
+    const sequence: { file: string; gain: number; interval: number }[] = [];
+    for (let i = 0; i < 50; i++) {
+      sequence.push({
+        file: files[Math.floor(Math.random() * files.length)],
+        gain: Math.random() * 10, // Gain entre 0 e 10
+        interval: Math.random() * 400 + 100 // Média de 300ms de espera
+      });
     }
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [isRunning]);
+
+    // 2. Fase Python
+    for (let i = 0; i < 50; i++) {
+      if (!isRunningRef.current) return;
+      const item = sequence[i];
+      await new Promise(r => {
+        timeoutRef.current = setTimeout(r, item.interval);
+      });
+      if (!isRunningRef.current) return;
+      
+      await sendSignalToBackend(item, 'Python', i + 1);
+    }
+
+    // 3. Fase Swift
+    for (let i = 0; i < 50; i++) {
+      if (!isRunningRef.current) return;
+      const item = sequence[i];
+      await new Promise(r => {
+        timeoutRef.current = setTimeout(r, item.interval);
+      });
+      if (!isRunningRef.current) return;
+      
+      await sendSignalToBackend(item, 'Swift', i + 1);
+    }
+
+    setIsRunning(false);
+    isRunningRef.current = false;
+  };
 
   return (
     <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center justify-between">
@@ -163,9 +156,12 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
       <div className="shrink-0 mt-4 md:mt-0">
         <button
           onClick={() => {
-            const next = !isRunning;
-            setIsRunning(next);
-            onRunningChange?.(next);
+            if (!isRunning) {
+              runSequence();
+            } else {
+              setIsRunning(false);
+              isRunningRef.current = false;
+            }
           }}
           className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-colors ${
             isRunning 
