@@ -153,6 +153,19 @@ func routes(_ app: Application) throws {
                     
                     await ReconstructionQueue.shared.dequeue()
                     
+                    // Transpose final image (square matrix)
+                    let dim = Int(Double(image.count).squareRoot())
+                    if dim * dim == image.count && dim > 0 {
+                        var transposed = [Float](repeating: 0.0, count: image.count)
+                        for r in 0..<dim {
+                            for c in 0..<dim {
+                                transposed[c * dim + r] = image[r * dim + c]
+                            }
+                        }
+                        image = transposed
+                        await LogStore.shared.add("Aplicada a transposta na imagem final de dimensão \(dim)x\(dim).")
+                    }
+                    
                     let endTime = Date()
                     let sharpness = laplacianVariance(image) // calcula a métrica de nitidez da imagem reconstruída
                     await LogStore.shared.add("Algoritmo \(algorithm) finalizado em \(iterations) iterações com erro de \(finalError).")

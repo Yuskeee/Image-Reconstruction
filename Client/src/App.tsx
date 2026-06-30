@@ -19,7 +19,7 @@ function App() {
   };
 
   const handleResultReceived = (result: ReconstructionResult) => {
-    setResults(prev => [result, ...prev].slice(0, 50));
+    setResults(prev => [result, ...prev].slice(0, 100));
     setTimeout(() => {
       setPendingRequests(prev => prev.filter(req => req.id !== result.id));
     }, 500);
