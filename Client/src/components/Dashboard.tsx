@@ -11,6 +11,8 @@ export interface RunStats {
 interface DashboardProps {
   swift: RunStats;
   python: RunStats;
+  completed: number;
+  expected: number;
 }
 
 const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
@@ -37,7 +39,7 @@ const computeMetrics = (stats: RunStats) => {
   };
 };
 
-const Dashboard: React.FC<DashboardProps> = ({ swift, python }) => {
+const Dashboard: React.FC<DashboardProps> = ({ swift, python, completed, expected }) => {
   const [expanded, setExpanded] = useState(false);
 
   const swiftM  = computeMetrics(swift);
@@ -58,14 +60,29 @@ const Dashboard: React.FC<DashboardProps> = ({ swift, python }) => {
     <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl overflow-hidden">
       <button
         onClick={() => setExpanded(prev => !prev)}
-        className="w-full flex items-center justify-between p-6 hover:bg-zinc-800/40 transition-colors"
+        className="w-full flex items-center gap-4 p-6 hover:bg-zinc-800/40 transition-colors"
       >
-        <h2 className="text-lg font-medium text-zinc-100 flex items-center gap-2">
+        <h2 className="text-lg font-medium text-zinc-100 flex items-center gap-2 shrink-0">
           <BarChart2 className="w-5 h-5 text-zinc-500" />
           Run Dashboard
         </h2>
+
+        {expected > 0 && (
+          <div className="flex-1 flex items-center gap-3">
+            <div className="flex-1 h-1.5 bg-zinc-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-green-500 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${Math.min((completed / expected) * 100, 100)}%` }}
+              />
+            </div>
+            <span className="text-xs font-mono text-zinc-400 shrink-0">
+              {Math.min(Math.round((completed / expected) * 100), 100)}%
+            </span>
+          </div>
+        )}
+
         <ChevronDown
-          className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-zinc-500 transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180' : ''}`}
         />
       </button>
 

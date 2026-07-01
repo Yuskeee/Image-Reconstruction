@@ -7,11 +7,13 @@ interface SignalManagerProps {
   onSignalSent: (id: string, signalFile: string, gain: string) => void;
   onResultReceived: (result: ReconstructionResult) => void;
   onRunningChange?: (running: boolean) => void;
+  onRunStart?: (totalImages: number) => void;
 }
 
-const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultReceived, onRunningChange }) => {
+const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultReceived, onRunningChange, onRunStart }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [signalFiles, setSignalFiles] = useState('A-60x60-1.csv, G-1.csv, G-2.csv, A-30x30-1.csv, g-30x30-1.csv, g-30x30-2.csv');
+  const [signalCount, setSignalCount] = useState(50);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isRunningRef = useRef(isRunning);
   const signalCountRef = useRef(0);
@@ -88,41 +90,40 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
 
   const runSequence = async () => {
     if (files.length === 0) return;
-    
+
     setIsRunning(true);
     isRunningRef.current = true;
-    
-    // 1. Pré-gerar a sequência de 50 sinais para garantir tempos e ganhos idênticos
+    onRunStart?.(signalCount * 4); // notifica o total de imagens esperadas antes de começar
+
+    // 1. Pré-gerar a sequência de sinais para garantir tempos e ganhos idênticos
     const sequence: { file: string; gain: number; interval: number }[] = [];
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < signalCount; i++) {
       sequence.push({
         file: files[Math.floor(Math.random() * files.length)],
-        gain: Math.random() * 10, // Gain entre 0 e 10
-        interval: Math.random() * 400 + 100 // Média de 300ms de espera
+        gain: Math.random() * 10,
+        interval: Math.random() * 400 + 100
       });
     }
 
     // 2. Fase Python
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < signalCount; i++) {
       if (!isRunningRef.current) return;
       const item = sequence[i];
       await new Promise(r => {
         timeoutRef.current = setTimeout(r, item.interval);
       });
       if (!isRunningRef.current) return;
-      
       await sendSignalToBackend(item, 'Python', i + 1);
     }
 
     // 3. Fase Swift
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < signalCount; i++) {
       if (!isRunningRef.current) return;
       const item = sequence[i];
       await new Promise(r => {
         timeoutRef.current = setTimeout(r, item.interval);
       });
       if (!isRunningRef.current) return;
-      
       await sendSignalToBackend(item, 'Swift', i + 1);
     }
 
@@ -141,14 +142,26 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
         <div className="grid grid-cols-1 gap-4">
           <div>
             <label className="block text-sm text-zinc-400 mb-1.5">Signal CSV Files</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={signalFiles}
               onChange={(e) => setSignalFiles(e.target.value)}
               disabled={isRunning}
               className="w-full bg-zinc-950 border border-zinc-800 text-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 disabled:opacity-50"
               placeholder="A-60x60-1.csv, G-1.csv..."
             />
+          </div>
+          <div>
+            <label className="block text-sm text-zinc-400 mb-1.5">Number of Signals</label>
+            <input
+              type="number"
+              min={1}
+              value={signalCount}
+              onChange={(e) => setSignalCount(Math.max(1, parseInt(e.target.value) || 1))}
+              disabled={isRunning}
+              className="w-32 bg-zinc-950 border border-zinc-800 text-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-zinc-600 disabled:opacity-50"
+            />
+            <span className="text-xs text-zinc-500 ml-2">{signalCount * 4} images expected</span>
           </div>
         </div>
       </div>

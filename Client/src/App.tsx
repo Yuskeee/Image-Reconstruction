@@ -14,9 +14,14 @@ function App() {
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [swiftStats, setSwiftStats] = useState<RunStats>(emptyStats());
   const [pythonStats, setPythonStats] = useState<RunStats>(emptyStats());
+  const [totalExpected, setTotalExpected] = useState(0);
 
   const handleSignalSent = (id: string, signalFile: string, gain: string) => {
     setPendingRequests(prev => [{ id, signalFile, gain }, ...prev]);
+  };
+
+  const handleRunStart = (totalImages: number) => {
+    setTotalExpected(totalImages);
   };
 
   const handleResultReceived = (result: ReconstructionResult) => {
@@ -49,6 +54,7 @@ function App() {
     if (running) {
       setSwiftStats(emptyStats());
       setPythonStats(emptyStats());
+      setTotalExpected(0);
     }
   };
 
@@ -70,9 +76,15 @@ function App() {
             onSignalSent={handleSignalSent}
             onResultReceived={handleResultReceived}
             onRunningChange={handleRunningChange}
+            onRunStart={handleRunStart}
           />
           <KPICards swift={swiftStats} python={pythonStats} />
-          <Dashboard swift={swiftStats} python={pythonStats} />
+          <Dashboard
+            swift={swiftStats}
+            python={pythonStats}
+            completed={swiftStats.count + pythonStats.count}
+            expected={totalExpected}
+          />
           <Report results={results} pending={pendingRequests} />
         </main>
       </div>
