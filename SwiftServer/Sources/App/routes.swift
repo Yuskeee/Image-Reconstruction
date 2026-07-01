@@ -167,7 +167,6 @@ func routes(_ app: Application) throws {
                     }
                     
                     let endTime = Date()
-                    let sharpness = laplacianVariance(image) // calcula a métrica de nitidez da imagem reconstruída
                     await LogStore.shared.add("Algoritmo \(algorithm) finalizado em \(iterations) iterações com erro de \(finalError).")
 
                     let responsePayload = ReconstructionResponse(
@@ -178,7 +177,6 @@ func routes(_ app: Application) throws {
                         iterations: iterations,
                         image: image,
                         finalError: finalError,
-                        sharpness: sharpness,
                         message: message
                     )
                     

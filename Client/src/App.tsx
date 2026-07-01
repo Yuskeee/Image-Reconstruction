@@ -20,14 +20,14 @@ function App() {
   };
 
   const handleResultReceived = (result: ReconstructionResult) => {
-    setResults(prev => [result, ...prev].slice(0, 100));
+    // calcula sharpness no cliente a partir da imagem reconstruída
+    const sharpness = laplacianVariance(result.image);
+    const enrichedResult = { ...result, sharpness };
+
+    setResults(prev => [enrichedResult, ...prev].slice(0, 100));
     setTimeout(() => {
       setPendingRequests(prev => prev.filter(req => req.id !== result.id));
     }, 500);
-
-    // calcula sharpness no cliente a partir da imagem reconstruída
-    const sharpness = laplacianVariance(result.image, result.imageSize);
-    const enrichedResult = { ...result, sharpness };
 
     // calcula a duração da reconstrução e acumula nas stats do servidor correspondente
     const timeMs = new Date(result.endTime).getTime() - new Date(result.startTime).getTime();
@@ -35,11 +35,11 @@ function App() {
     setStat(prev => ({
       count: prev.count + 1,
       timesMs: [...prev.timesMs, timeMs],
-      cgneSharpnesses: result.algorithm === 'CGNE' && result.sharpness !== undefined
-        ? [...prev.cgneSharpnesses, result.sharpness]
+      cgneSharpnesses: result.algorithm === 'CGNE'
+        ? [...prev.cgneSharpnesses, sharpness]
         : prev.cgneSharpnesses,
-      cgnrSharpnesses: result.algorithm === 'CGNR' && result.sharpness !== undefined
-        ? [...prev.cgnrSharpnesses, result.sharpness]
+      cgnrSharpnesses: result.algorithm === 'CGNR'
+        ? [...prev.cgnrSharpnesses, sharpness]
         : prev.cgnrSharpnesses,
     }));
   };

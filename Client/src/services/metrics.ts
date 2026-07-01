@@ -1,6 +1,7 @@
 // Métrica cega de nitidez (No-Reference) baseada na variância do Laplaciano.
 // Quanto maior o valor retornado, mais nítida é a imagem reconstruída.
-export function laplacianVariance(image: number[], size: number): number {
+export function laplacianVariance(image: number[]): number {
+  const size = Math.round(Math.sqrt(image.length)); // calcula o lado da imagem quadrada
   // normaliza para [0, 255] para que o filtro opere em escala padrão
   let min = Infinity, max = -Infinity;
   for (const v of image) {
