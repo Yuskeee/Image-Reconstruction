@@ -21,11 +21,14 @@ export const requestReconstruction = (data: ReconstructRequest, url: string = "w
         }
       } catch (err) {
         reject(err);
+      } finally {
+        ws.close();
       }
     };
 
     ws.onerror = (error) => {
       reject(error);
+      ws.close();
     };
 
     ws.onclose = (event) => {

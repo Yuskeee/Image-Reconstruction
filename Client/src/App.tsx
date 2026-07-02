@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import KPICards from './components/KPICards';
 import type { RunStats } from './components/Dashboard';
 import { laplacianVariance } from './services/metrics';
+import { generateDataURL } from './services/imageUtils';
 import type { ReconstructionResult, PendingRequest } from './components/Report';
 import { LayoutDashboard, ChevronDown } from 'lucide-react';
 
@@ -28,8 +29,12 @@ function App() {
 
   const handleResultReceived = (result: ReconstructionResult) => {
     // calcula sharpness no cliente a partir da imagem reconstruída
-    const sharpness = laplacianVariance(result.image);
-    const enrichedResult = { ...result, sharpness };
+    const sharpness = result.image ? laplacianVariance(result.image) : 0;
+    const imageUrl = result.image ? generateDataURL(result.image) : undefined;
+    
+    // Removemos a imagem raw da memória do estado principal do React!
+    const enrichedResult = { ...result, sharpness, imageUrl };
+    delete enrichedResult.image;
 
     setResults(prev => [enrichedResult, ...prev].slice(0, 100));
     setTimeout(() => {

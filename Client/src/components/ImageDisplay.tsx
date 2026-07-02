@@ -1,22 +1,24 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 
 interface ImageDisplayProps {
-  data: number[];
+  data?: number[];
+  imageUrl?: string;
 }
 
-const ImageDisplay: React.FC<ImageDisplayProps> = ({ data }) => {
+const ImageDisplay: React.FC<ImageDisplayProps> = ({ data, imageUrl }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const gridSize = useMemo(() => {
-    return Math.ceil(Math.sqrt(data.length));
-  }, [data.length]);
+    return data ? Math.ceil(Math.sqrt(data.length)) : 60;
+  }, [data]);
   
   const heightSize = useMemo(() => {
-    return Math.ceil(data.length / gridSize);
-  }, [data.length, gridSize]);
+    return data ? Math.ceil(data.length / gridSize) : 60;
+  }, [data, gridSize]);
 
   // Encontrar min e max para normalizar a cor
   const [min, max] = useMemo(() => {
+    if (!data) return [0, 0];
     let minVal = Infinity;
     let maxVal = -Infinity;
     for(let i = 0; i < data.length; i++){
@@ -28,6 +30,7 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({ data }) => {
   }, [data]);
 
   useEffect(() => {
+    if (!data) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -52,6 +55,19 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({ data }) => {
       ctx.fillRect(x, y, 1, 1);
     }
   }, [data, gridSize, heightSize, min, max]);
+
+  if (imageUrl) {
+    return (
+      <div className="bg-slate-800 border border-slate-700 rounded overflow-hidden p-1 flex items-center justify-center shrink-0">
+        <img
+          src={imageUrl}
+          alt="Reconstructed"
+          className="w-24 h-24 sm:w-32 sm:h-32 md:w-48 md:h-48 object-contain cursor-crosshair"
+          style={{ imageRendering: 'pixelated' }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-800 border border-slate-700 rounded overflow-hidden p-1 flex items-center justify-center shrink-0">
