@@ -9,7 +9,8 @@ export interface ReconstructionResult {
   endTime: string;
   imageSize: number;
   iterations: number;
-  image: number[];
+  image?: number[];
+  imageUrl?: string;
   finalError: number;
   sharpness?: number;
   message: string;
@@ -83,7 +84,7 @@ const Report: React.FC<ReportProps> = ({ results, pending = [] }) => {
             <div key={index} className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-5 flex flex-col sm:flex-row gap-5 items-start hover:border-zinc-700 transition-colors">
               <div className="shrink-0 flex flex-col items-center gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Output</span>
-                <ImageDisplay data={res.image} />
+                <ImageDisplay data={res.image} imageUrl={res.imageUrl} />
               </div>
               
               <div className="flex-1 w-full space-y-3">
