@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Square, Settings2 } from 'lucide-react';
+import { Play, Square, Settings2, ChevronDown } from 'lucide-react';
 import { requestReconstruction } from '../services/api';
 import type { ReconstructionResult } from './Report';
 
@@ -12,6 +12,7 @@ interface SignalManagerProps {
 
 const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultReceived, onRunningChange, onRunStart }) => {
   const [isRunning, setIsRunning] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [signalFiles, setSignalFiles] = useState('A-60x60-1.csv, G-1.csv, G-2.csv, A-30x30-1.csv, g-30x30-1.csv, g-30x30-2.csv');
   const [signalCount, setSignalCount] = useState(50);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -132,14 +133,55 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center justify-between">
-      <div className="flex-1 w-full space-y-4">
+    <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl overflow-hidden">
+      {/* Header / toggle */}
+      <div
+        className="flex items-center justify-between gap-4 p-6 cursor-pointer hover:bg-zinc-800/40 transition-colors"
+        onClick={() => setExpanded(prev => !prev)}
+      >
         <h2 className="text-lg font-medium text-zinc-100 flex items-center gap-2">
           <Settings2 className="w-5 h-5 text-zinc-500" />
           Settings
         </h2>
-        
-        <div className="grid grid-cols-1 gap-4">
+        <div className="flex items-center gap-3">
+          {/* Botão Start/Stop — clique não propaga para o toggle */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isRunning) {
+                runSequence();
+              } else {
+                setIsRunning(false);
+                isRunningRef.current = false;
+              }
+            }}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-colors ${
+              isRunning
+                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                : 'bg-zinc-100 text-zinc-900 hover:bg-white'
+            }`}
+          >
+            {isRunning ? (
+              <>
+                <Square className="w-4 h-4" />
+                Stop Sequence
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4" />
+                Start Sequence
+              </>
+            )}
+          </button>
+          <ChevronDown
+            className={`w-4 h-4 text-zinc-500 transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180' : ''}`}
+          />
+        </div>
+      </div>
+
+      {/* Conteúdo colapsável */}
+      {expanded && (
+        <div className="px-6 pb-6 space-y-4">
           <div>
             <label className="block text-sm text-zinc-400 mb-1.5">Signal CSV Files</label>
             <input
@@ -164,37 +206,7 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
             <span className="text-xs text-zinc-500 ml-2">{signalCount * 4} images expected</span>
           </div>
         </div>
-      </div>
-
-      <div className="shrink-0 mt-4 md:mt-0">
-        <button
-          onClick={() => {
-            if (!isRunning) {
-              runSequence();
-            } else {
-              setIsRunning(false);
-              isRunningRef.current = false;
-            }
-          }}
-          className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-colors ${
-            isRunning 
-              ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
-              : 'bg-zinc-100 text-zinc-900 hover:bg-white'
-          }`}
-        >
-          {isRunning ? (
-            <>
-              <Square className="w-4 h-4" />
-              Stop Sequence
-            </>
-          ) : (
-            <>
-              <Play className="w-4 h-4" />
-              Start Sequence
-            </>
-          )}
-        </button>
-      </div>
+      )}
     </div>
   );
 };

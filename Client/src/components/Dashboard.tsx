@@ -64,7 +64,7 @@ const Dashboard: React.FC<DashboardProps> = ({ swift, python, completed, expecte
       >
         <h2 className="text-lg font-medium text-zinc-100 flex items-center gap-2 shrink-0">
           <BarChart2 className="w-5 h-5 text-zinc-500" />
-          Run Dashboard
+          Statistics
         </h2>
 
         {expected > 0 && (

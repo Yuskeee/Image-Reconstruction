@@ -6,12 +6,14 @@ import KPICards from './components/KPICards';
 import type { RunStats } from './components/Dashboard';
 import { laplacianVariance } from './services/metrics';
 import type { ReconstructionResult, PendingRequest } from './components/Report';
+import { LayoutDashboard, ChevronDown } from 'lucide-react';
 
 const emptyStats = (): RunStats => ({ count: 0, timesMs: [], cgneSharpnesses: [], cgnrSharpnesses: [] });
 
 function App() {
   const [results, setResults] = useState<ReconstructionResult[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
+  const [dashboardExpanded, setDashboardExpanded] = useState(false);
   const [swiftStats, setSwiftStats] = useState<RunStats>(emptyStats());
   const [pythonStats, setPythonStats] = useState<RunStats>(emptyStats());
   const [totalExpected, setTotalExpected] = useState(0);
@@ -78,13 +80,33 @@ function App() {
             onRunningChange={handleRunningChange}
             onRunStart={handleRunStart}
           />
-          <KPICards swift={swiftStats} python={pythonStats} />
           <Dashboard
             swift={swiftStats}
             python={pythonStats}
             completed={swiftStats.count + pythonStats.count}
             expected={totalExpected}
           />
+          {(swiftStats.count > 0 || pythonStats.count > 0) && (
+            <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setDashboardExpanded(prev => !prev)}
+                className="w-full flex items-center gap-4 p-6 hover:bg-zinc-800/40 transition-colors"
+              >
+                <h2 className="text-lg font-medium text-zinc-100 flex items-center gap-2 shrink-0">
+                  <LayoutDashboard className="w-5 h-5 text-zinc-500" />
+                  Dashboard
+                </h2>
+                <ChevronDown
+                  className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ml-auto shrink-0 ${dashboardExpanded ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {dashboardExpanded && (
+                <div className="px-6 pb-6">
+                  <KPICards swift={swiftStats} python={pythonStats} />
+                </div>
+              )}
+            </div>
+          )}
           <Report results={results} pending={pendingRequests} />
         </main>
       </div>
