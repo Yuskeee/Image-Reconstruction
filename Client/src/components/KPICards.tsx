@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Activity } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import type { RunStats } from './Dashboard';
 
 interface KPICardsProps {
@@ -53,33 +53,12 @@ const KPICards: React.FC<KPICardsProps> = ({ swift, python }) => {
   }
 
   // --- Sparkline tempo por servidor ---
-  const allTimes  = [...python.timesMs, ...swift.timesMs];
-  const tMin      = allTimes.length > 0 ? Math.min(...allTimes) : 0;
-  const tMax      = allTimes.length > 0 ? Math.max(...allTimes) : 1;
-  const tMaxLen   = Math.max(python.timesMs.length, swift.timesMs.length, 2);
+  const allTimes       = [...python.timesMs, ...swift.timesMs];
+  const tMin           = allTimes.length > 0 ? Math.min(...allTimes) : 0;
+  const tMax           = allTimes.length > 0 ? Math.max(...allTimes) : 1;
+  const tMaxLen        = Math.max(python.timesMs.length, swift.timesMs.length, 2);
   const pythonTimeLine = toSparkline(python.timesMs, tMaxLen, tMin, tMax);
   const swiftTimeLine  = toSparkline(swift.timesMs,  tMaxLen, tMin, tMax);
-
-  let timeWinnerText = '';
-  if (swiftHasData && python.timesMs.length > 0 && swift.timesMs.length > 0) {
-    const pythonAvgMs = sum(python.timesMs) / python.timesMs.length;
-    const swiftAvgMs  = sum(swift.timesMs)  / swift.timesMs.length;
-    const faster      = swiftAvgMs <= pythonAvgMs ? 'Swift' : 'Python';
-    const fasterVal   = Math.min(swiftAvgMs, pythonAvgMs);
-    const slowerVal   = Math.max(swiftAvgMs, pythonAvgMs);
-    const pct         = ((slowerVal / fasterVal - 1) * 100).toFixed(0);
-    timeWinnerText    = `${faster} is +${pct}% faster per image`;
-  }
-
-  // --- Nitidez (cards textuais) ---
-  const cgneSharpnesses = [...swift.cgneSharpnesses, ...python.cgneSharpnesses];
-  const cgnrSharpnesses = [...swift.cgnrSharpnesses, ...python.cgnrSharpnesses];
-  const cgneSharp    = cgneSharpnesses.length > 0 ? sum(cgneSharpnesses) / cgneSharpnesses.length : 0;
-  const cgnrSharp    = cgnrSharpnesses.length > 0 ? sum(cgnrSharpnesses) / cgnrSharpnesses.length : 0;
-  const sharpWinner  = cgneSharp >= cgnrSharp ? 'CGNE' : 'CGNR';
-  const sharpWinnerVal = Math.max(cgneSharp, cgnrSharp);
-  const sharpLoserVal  = Math.min(cgneSharp, cgnrSharp);
-  const sharpPct       = sharpLoserVal > 0 ? ((sharpWinnerVal / sharpLoserVal - 1) * 100).toFixed(0) : '—';
 
   // --- P95 ---
   const swiftP95  = p95(swift.timesMs);
@@ -100,10 +79,9 @@ const KPICards: React.FC<KPICardsProps> = ({ swift, python }) => {
   return (
     <div className="space-y-4">
 
-      {/* Linha 1: dois gráficos empilhados, largura total */}
       <div className="flex flex-col gap-4">
 
-        {/* Card Time / Image — sparkline (topo) */}
+        {/* Card Time / Image — sparkline */}
         <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-5 flex flex-col gap-3 min-h-[200px]">
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-medium">Time / Image</span>
@@ -126,12 +104,11 @@ const KPICards: React.FC<KPICardsProps> = ({ swift, python }) => {
                 <polyline points={pythonTimeLine} fill="none" stroke="#a78bfa" strokeWidth="0.8" strokeLinejoin="round" strokeLinecap="round" />
               )}
               {swiftTimeLine && (
-                <polyline points={swiftTimeLine}  fill="none" stroke="#38bdf8" strokeWidth="0.8" strokeLinejoin="round" strokeLinecap="round" />
+                <polyline points={swiftTimeLine} fill="none" stroke="#38bdf8" strokeWidth="0.8" strokeLinejoin="round" strokeLinecap="round" />
               )}
             </svg>
           </div>
 
-          {/* Tempo médio por servidor */}
           <div className="flex gap-6 pt-1">
             <div className="flex items-baseline gap-1.5">
               <span className="inline-block w-2 h-2 rounded-full bg-violet-400 shrink-0" />
@@ -195,66 +172,33 @@ const KPICards: React.FC<KPICardsProps> = ({ swift, python }) => {
 
       </div>
 
-      {/* Linha 2: dois cards textuais */}
+      {/* Card Stability P95 */}
       {pythonHasData && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-          {/* Card Avg Sharpness */}
-          <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-5 space-y-3 min-h-[160px]">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-medium">Avg Sharpness</span>
-              <Eye className="w-4 h-4 text-zinc-600" />
-            </div>
-            <div className="flex items-end gap-6">
-              <div>
-                <span className="text-[10px] text-zinc-500 block mb-1">CGNE</span>
-                <p className={`text-2xl font-mono font-semibold ${cgneSharpnesses.length > 0 && sharpWinner === 'CGNE' ? 'text-zinc-100' : 'text-zinc-600'}`}>
-                  {cgneSharpnesses.length > 0 ? cgneSharp.toFixed(2) : '--'}
-                </p>
-              </div>
-              <span className="text-zinc-700 text-sm mb-1">vs</span>
-              <div>
-                <span className="text-[10px] text-zinc-500 block mb-1">CGNR</span>
-                <p className={`text-2xl font-mono font-semibold ${cgnrSharpnesses.length > 0 && sharpWinner === 'CGNR' ? 'text-zinc-100' : 'text-zinc-600'}`}>
-                  {cgnrSharpnesses.length > 0 ? cgnrSharp.toFixed(2) : '--'}
-                </p>
-              </div>
-            </div>
-            <p className="text-xs text-zinc-500">
-              {cgneSharpnesses.length > 0 && cgnrSharpnesses.length > 0
-                ? `${sharpWinner} produces +${sharpPct}% sharper images`
-                : 'Waiting for both algorithms…'}
-            </p>
+        <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-5 space-y-3 min-h-[160px]">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-medium">Stability P95</span>
+            <Activity className="w-4 h-4 text-zinc-600" />
           </div>
-
-          {/* Card Stability P95 */}
-          <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-5 space-y-3 min-h-[160px]">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-medium">Stability P95</span>
-              <Activity className="w-4 h-4 text-zinc-600" />
+          <div className="flex items-end gap-6">
+            <div>
+              <span className="text-[10px] text-zinc-500 block mb-1">Swift</span>
+              <p className={`text-2xl font-mono font-semibold ${swiftHasData && p95Winner === 'Swift' ? 'text-zinc-100' : 'text-zinc-600'}`}>
+                {swiftHasData ? <>{swiftP95.toFixed(1)}<span className="text-xs font-normal text-zinc-600 ml-0.5">ms</span></> : '--'}
+              </p>
             </div>
-            <div className="flex items-end gap-6">
-              <div>
-                <span className="text-[10px] text-zinc-500 block mb-1">Swift</span>
-                <p className={`text-2xl font-mono font-semibold ${swiftHasData && p95Winner === 'Swift' ? 'text-zinc-100' : 'text-zinc-600'}`}>
-                  {swiftHasData ? <>{swiftP95.toFixed(1)}<span className="text-xs font-normal text-zinc-600 ml-0.5">ms</span></> : '--'}
-                </p>
-              </div>
-              <span className="text-zinc-700 text-sm mb-1">vs</span>
-              <div>
-                <span className="text-[10px] text-zinc-500 block mb-1">Python</span>
-                <p className={`text-2xl font-mono font-semibold ${pythonHasData && p95Winner === 'Python' ? 'text-zinc-100' : 'text-zinc-600'}`}>
-                  {pythonHasData ? <>{pythonP95.toFixed(1)}<span className="text-xs font-normal text-zinc-600 ml-0.5">ms</span></> : '--'}
-                </p>
-              </div>
+            <span className="text-zinc-700 text-sm mb-1">vs</span>
+            <div>
+              <span className="text-[10px] text-zinc-500 block mb-1">Python</span>
+              <p className={`text-2xl font-mono font-semibold ${pythonHasData && p95Winner === 'Python' ? 'text-zinc-100' : 'text-zinc-600'}`}>
+                {pythonHasData ? <>{pythonP95.toFixed(1)}<span className="text-xs font-normal text-zinc-600 ml-0.5">ms</span></> : '--'}
+              </p>
             </div>
-            <p className="text-xs text-zinc-500">
-              {bothHaveData
-                ? `95% of images reconstructed in under ${Math.min(swiftP95, pythonP95).toFixed(1)} ms`
-                : 'Waiting for Swift…'}
-            </p>
           </div>
-
+          <p className="text-xs text-zinc-500">
+            {bothHaveData
+              ? `95% of images reconstructed in under ${Math.min(swiftP95, pythonP95).toFixed(1)} ms`
+              : 'Waiting for Swift…'}
+          </p>
         </div>
       )}
 

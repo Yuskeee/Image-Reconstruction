@@ -4,8 +4,6 @@ import { BarChart2, ChevronDown } from 'lucide-react';
 export interface RunStats {
   count: number;
   timesMs: number[];
-  cgneSharpnesses: number[];
-  cgnrSharpnesses: number[];
 }
 
 interface DashboardProps {
@@ -24,18 +22,16 @@ const p95 = (arr: number[]): number => {
 };
 
 const computeMetrics = (stats: RunStats) => {
-  const { count, timesMs, cgneSharpnesses, cgnrSharpnesses } = stats;
+  const { count, timesMs } = stats;
   if (count === 0) return null;
   const totalMs = sum(timesMs);
   const totalSec = totalMs / 1000;
-  const allSharpnesses = [...cgneSharpnesses, ...cgnrSharpnesses];
   return {
     count,
-    totalSec:     totalSec.toFixed(3),
-    ips:          (count / totalSec).toFixed(2),
-    avgMs:        (totalMs / count).toFixed(2),
-    p95Ms:        p95(timesMs).toFixed(2),
-    avgSharpness: allSharpnesses.length > 0 ? (sum(allSharpnesses) / allSharpnesses.length).toFixed(2) : '—',
+    totalSec: totalSec.toFixed(3),
+    ips:      (count / totalSec).toFixed(2),
+    avgMs:    (totalMs / count).toFixed(2),
+    p95Ms:    p95(timesMs).toFixed(2),
   };
 };
 
@@ -48,12 +44,11 @@ const Dashboard: React.FC<DashboardProps> = ({ swift, python, completed, expecte
   if (!swiftM && !pythonM) return null;
 
   const rows = [
-    { label: 'Total Images',    swift: swiftM?.count        ?? '—', python: pythonM?.count        ?? '—' },
-    { label: 'Total Time (s)',  swift: swiftM?.totalSec     ?? '—', python: pythonM?.totalSec     ?? '—' },
-    { label: 'IPS',             swift: swiftM?.ips          ?? '—', python: pythonM?.ips          ?? '—' },
-    { label: 'Avg Time (ms)',   swift: swiftM?.avgMs        ?? '—', python: pythonM?.avgMs        ?? '—' },
-    { label: 'P95 (ms)',        swift: swiftM?.p95Ms        ?? '—', python: pythonM?.p95Ms        ?? '—' },
-    { label: 'Avg Sharpness',   swift: swiftM?.avgSharpness ?? '—', python: pythonM?.avgSharpness ?? '—' },
+    { label: 'Total Images',   swift: swiftM?.count    ?? '—', python: pythonM?.count    ?? '—' },
+    { label: 'Total Time (s)', swift: swiftM?.totalSec ?? '—', python: pythonM?.totalSec ?? '—' },
+    { label: 'IPS',            swift: swiftM?.ips      ?? '—', python: pythonM?.ips      ?? '—' },
+    { label: 'Avg Time (ms)',  swift: swiftM?.avgMs    ?? '—', python: pythonM?.avgMs    ?? '—' },
+    { label: 'P95 (ms)',       swift: swiftM?.p95Ms    ?? '—', python: pythonM?.p95Ms    ?? '—' },
   ];
 
   return (
