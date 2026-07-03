@@ -100,8 +100,57 @@ const KPICards: React.FC<KPICardsProps> = ({ swift, python }) => {
   return (
     <div className="space-y-4">
 
-      {/* Linha 1: dois gráficos lado a lado */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Linha 1: dois gráficos empilhados, largura total */}
+      <div className="flex flex-col gap-4">
+
+        {/* Card Time / Image — sparkline (topo) */}
+        <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-5 flex flex-col gap-3 min-h-[200px]">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-medium">Time / Image</span>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 text-[10px] text-zinc-400">
+                <span className="inline-block w-4 h-0.5 bg-violet-400 rounded" />
+                Python
+              </span>
+              <span className="flex items-center gap-1 text-[10px] text-zinc-400">
+                <span className="inline-block w-4 h-0.5 bg-sky-400 rounded" />
+                Swift
+              </span>
+            </div>
+          </div>
+
+          <div className="flex-1 flex items-center">
+            <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: '120px' }} preserveAspectRatio="none">
+              {[0.25, 0.5, 0.75].map(gridLine)}
+              {pythonTimeLine && (
+                <polyline points={pythonTimeLine} fill="none" stroke="#a78bfa" strokeWidth="0.8" strokeLinejoin="round" strokeLinecap="round" />
+              )}
+              {swiftTimeLine && (
+                <polyline points={swiftTimeLine}  fill="none" stroke="#38bdf8" strokeWidth="0.8" strokeLinejoin="round" strokeLinecap="round" />
+              )}
+            </svg>
+          </div>
+
+          {/* Tempo médio por servidor */}
+          <div className="flex gap-6 pt-1">
+            <div className="flex items-baseline gap-1.5">
+              <span className="inline-block w-2 h-2 rounded-full bg-violet-400 shrink-0" />
+              <span className="text-[10px] text-zinc-500">Python avg</span>
+              <span className="text-xs font-mono text-zinc-300">
+                {python.timesMs.length > 0 ? (sum(python.timesMs) / python.timesMs.length).toFixed(1) : '--'}
+                <span className="text-zinc-600 ml-0.5">ms</span>
+              </span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="inline-block w-2 h-2 rounded-full bg-sky-400 shrink-0" />
+              <span className="text-[10px] text-zinc-500">Swift avg</span>
+              <span className="text-xs font-mono text-zinc-300">
+                {swift.timesMs.length > 0 ? (sum(swift.timesMs) / swift.timesMs.length).toFixed(1) : '--'}
+                <span className="text-zinc-600 ml-0.5">ms</span>
+              </span>
+            </div>
+          </div>
+        </div>
 
         {/* Card Throughput — barras */}
         <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-5 flex flex-col gap-4 min-h-[200px]">
@@ -144,34 +193,6 @@ const KPICards: React.FC<KPICardsProps> = ({ swift, python }) => {
           )}
         </div>
 
-        {/* Card Time / Image — sparkline */}
-        <div className="bg-zinc-900 border border-zinc-800/80 rounded-xl p-5 flex flex-col gap-3 min-h-[200px]">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-medium">Time / Image</span>
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 text-[10px] text-zinc-400">
-                <span className="inline-block w-4 h-0.5 bg-violet-400 rounded" />
-                Python
-              </span>
-              <span className="flex items-center gap-1 text-[10px] text-zinc-400">
-                <span className="inline-block w-4 h-0.5 bg-sky-400 rounded" />
-                Swift
-              </span>
-            </div>
-          </div>
-
-          <div className="flex-1 flex items-center">
-            <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: '120px' }} preserveAspectRatio="none">
-              {[0.25, 0.5, 0.75].map(gridLine)}
-              {pythonTimeLine && (
-                <polyline points={pythonTimeLine} fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-              )}
-              {swiftTimeLine && (
-                <polyline points={swiftTimeLine}  fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-              )}
-            </svg>
-          </div>
-        </div>
       </div>
 
       {/* Linha 2: dois cards textuais */}
