@@ -3,7 +3,7 @@ import Accelerate
 
 // MARK: - Funções Auxiliares
 
-func readCSV(atPath path: String) -> [[Float]] {
+func readCSV(atPath path: String) -> [[Double]] {
     guard let content = try? String(contentsOfFile: path, encoding: .utf8) else {
         print("Erro ao ler o arquivo: \(path)")
         return []
@@ -12,11 +12,11 @@ func readCSV(atPath path: String) -> [[Float]] {
     let rows = content.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "\n")
     return rows.map { row in
         row.components(separatedBy: ";")
-           .compactMap { Float($0.replacingOccurrences(of: ",", with: ".")) }
+           .compactMap { Double($0.replacingOccurrences(of: ",", with: ".")) }
     }
 }
 
-func printMatrix(_ matrix: [Float], rows: Int, cols: Int, label: String) {
+func printMatrix(_ matrix: [Double], rows: Int, cols: Int, label: String) {
     print("\(label):")
     for r in 0..<rows {
         let start = r * cols
@@ -58,7 +58,7 @@ print()
 
 print("--- Operação: M * N ---")
 if mCols == nRows {
-    var resultMN = [Float](repeating: 0.0, count: Int(mRows * nCols))
+    var resultMN = [Double](repeating: 0.0, count: Int(mRows * nCols))
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, mRows, nCols, mCols, 1.0, M, mCols, N, nCols, 0.0, &resultMN, nCols)
     printMatrix(resultMN, rows: Int(mRows), cols: Int(nCols), label: "Resultado de M * N")
 } else {
@@ -69,7 +69,7 @@ if mCols == nRows {
 
 print("--- Operação: a * M ---")
 if aCols == mRows {
-    var result_aM = [Float](repeating: 0.0, count: Int(aRows * mCols))
+    var result_aM = [Double](repeating: 0.0, count: Int(aRows * mCols))
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, aRows, mCols, aCols, 1.0, a, aCols, M, mCols, 0.0, &result_aM, mCols)
     printMatrix(result_aM, rows: Int(aRows), cols: Int(mCols), label: "Resultado de a * M")
 } else {
@@ -80,7 +80,7 @@ if aCols == mRows {
 
 print("--- Operação: M * a ---")
 if mCols == aRows {
-    var result_Ma = [Float](repeating: 0.0, count: Int(mRows * aCols))
+    var result_Ma = [Double](repeating: 0.0, count: Int(mRows * aCols))
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, mRows, aCols, mCols, 1.0, M, mCols, a, aCols, 0.0, &result_Ma, aCols)
     printMatrix(result_Ma, rows: Int(mRows), cols: Int(aCols), label: "Resultado de M * a")
 } else {

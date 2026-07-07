@@ -122,8 +122,8 @@ func routes(_ app: Application) throws {
                     
                     await LogStore.shared.add("Iniciando algoritmo \(algorithm)...")
                     var iterations = 0
-                    var finalError: Float = 0.0
-                    var image: [Float] = []
+                    var finalError: Double = 0.0
+                    var image: [Double] = []
                     let message = "Success"
                     
                     await LogStore.shared.add("Aguardando liberação do ReconstructionQueue...")
@@ -156,7 +156,7 @@ func routes(_ app: Application) throws {
                     // Transpose final image (square matrix)
                     let dim = Int(Double(image.count).squareRoot())
                     if dim * dim == image.count && dim > 0 {
-                        var transposed = [Float](repeating: 0.0, count: image.count)
+                        var transposed = [Double](repeating: 0.0, count: image.count)
                         for r in 0..<dim {
                             for c in 0..<dim {
                                 transposed[c * dim + r] = image[r * dim + c]

@@ -2,7 +2,7 @@ import Vapor
 
 struct ReconstructionRequest: Content {
     let algorithm: String // "CGNE" ou "CGNR"
-    let signal: [Float] // Vector g
+    let signal: [Double] // Vector g
 }
 
 struct ReconstructionResponse: Content {
@@ -11,8 +11,8 @@ struct ReconstructionResponse: Content {
     let endTime: Date
     let imageSize: Int
     let iterations: Int
-    let image: [Float] // Vector f
-    let finalError: Float
+    let image: [Double] // Vector f
+    let finalError: Double
     let message: String
 }
 

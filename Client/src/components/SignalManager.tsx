@@ -12,12 +12,14 @@ interface SignalManagerProps {
 
 const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultReceived, onRunningChange, onRunStart }) => {
   const [isRunning, setIsRunning] = useState(false);
+  const [isHolding, setIsHolding] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const [signalFiles, setSignalFiles] = useState('A-60x60-1.csv, G-1.csv, G-2.csv, A-30x30-1.csv, g-30x30-1.csv, g-30x30-2.csv');
   const [signalCount, setSignalCount] = useState(50);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isRunningRef = useRef(isRunning);
   const signalCountRef = useRef(0);
+  const continueRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     isRunningRef.current = isRunning;
@@ -117,6 +119,15 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
       await sendSignalToBackend(item, 'Python', i + 1);
     }
 
+    // Entrar em hold
+    if (!isRunningRef.current) return;
+    setIsHolding(true);
+    await new Promise<void>(resolve => {
+      continueRef.current = resolve;
+    });
+    setIsHolding(false);
+    if (!isRunningRef.current) return;
+
     // 3. Fase Swift
     for (let i = 0; i < signalCount; i++) {
       if (!isRunningRef.current) return;
@@ -144,35 +155,69 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
           Settings
         </h2>
         <div className="flex items-center gap-3">
-          {/* Botão Start/Stop — clique não propaga para o toggle */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!isRunning) {
-                runSequence();
-              } else {
-                setIsRunning(false);
-                isRunningRef.current = false;
-              }
-            }}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-colors ${
-              isRunning
-                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
-                : 'bg-zinc-100 text-zinc-900 hover:bg-white'
-            }`}
-          >
-            {isRunning ? (
-              <>
-                <Square className="w-4 h-4" />
-                Stop Sequence
-              </>
-            ) : (
-              <>
+          {/* Botões de controle de fluxo — clique não propaga para o toggle */}
+          {isHolding ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (continueRef.current) {
+                    continueRef.current();
+                  }
+                }}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-colors bg-blue-500/10 text-blue-500 hover:bg-blue-500/20"
+              >
                 <Play className="w-4 h-4" />
-                Start Sequence
-              </>
-            )}
-          </button>
+                Continuar para Swift
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsRunning(false);
+                  isRunningRef.current = false;
+                  if (continueRef.current) {
+                    continueRef.current();
+                  }
+                }}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-colors bg-red-500/10 text-red-500 hover:bg-red-500/20"
+              >
+                <Square className="w-4 h-4" />
+                Stop
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isRunning) {
+                  runSequence();
+                } else {
+                  setIsRunning(false);
+                  isRunningRef.current = false;
+                  if (continueRef.current) {
+                    continueRef.current();
+                  }
+                }
+              }}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm transition-colors ${
+                isRunning
+                  ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                  : 'bg-zinc-100 text-zinc-900 hover:bg-white'
+              }`}
+            >
+              {isRunning ? (
+                <>
+                  <Square className="w-4 h-4" />
+                  Stop Sequence
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4" />
+                  Start Sequence
+                </>
+              )}
+            </button>
+          )}
           <ChevronDown
             className={`w-4 h-4 text-zinc-500 transition-transform duration-200 shrink-0 ${expanded ? 'rotate-180' : ''}`}
           />

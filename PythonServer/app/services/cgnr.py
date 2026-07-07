@@ -18,13 +18,20 @@ def cgnr(H, g, max_iter=10, tol=1e-4):
     Tuple of (f, iterations, final_error)
     """
 
-    # Initialize variables
-    f = np.zeros(H.shape[1], dtype=np.float32)  # Initial guess for the solution
-    r = g.copy()                                  # Initial residual: g - H*f0 = g (f0 = 0)
-    z = H.T @ r                                   # z0 = H^T * r0
-    p = z.copy()                                  # Initial search direction: p0 = z0
-    prev_r_norm = np.sqrt(np.dot(r, r))           # ||r0||
-    z_dot_z = np.dot(z, z)                        # z · z
+    g_norm = np.linalg.norm(g)
+    if g_norm < 1e-30:
+        return np.zeros(H.shape[1], dtype=np.float64), 0, 0.0
+
+    r = g / g_norm
+    f = np.zeros(H.shape[1], dtype=np.float64)
+    z = H.T @ r
+    
+    lam = np.max(np.abs(z)) * 0.10
+    
+    s = z - lam * f
+    p = s.copy()
+    norm_s = np.dot(s, s)
+    prev_r_norm = np.linalg.norm(r)
 
     final_error = 0.0
     iterations = 0
@@ -32,25 +39,26 @@ def cgnr(H, g, max_iter=10, tol=1e-4):
     for i in range(max_iter):
         iterations = i + 1
 
-        w = H @ p                                        # w_i = H * p_i
-        alpha = z_dot_z / np.dot(w, w)                  # alpha = z·z / w·w
+        q = H @ p
+        q_norm = np.dot(q, q) + lam * np.dot(p, p)
+        alpha = norm_s / q_norm
 
-        f = f + alpha * p                                # f_{i+1} = f_i + alpha * p_i
-        r = r - alpha * w                                # r_{i+1} = r_i - alpha * w_i
+        f = f + alpha * p
+        r = r - alpha * q
 
-        current_r_norm = np.sqrt(np.dot(r, r))           # ||r_{i+1}||
-        final_error = abs(current_r_norm - prev_r_norm)  # error = | ||r_{i+1}|| - ||r_i|| |
+        current_r_norm = np.linalg.norm(r)
+        final_error = abs(current_r_norm - prev_r_norm)
 
-        if final_error < tol:                            # stopping criterion
+        if final_error < tol:
             break
 
-        prev_r_norm = current_r_norm                     # update ||r||
+        prev_r_norm = current_r_norm
 
-        z = H.T @ r                                      # z_{i+1} = H^T * r_{i+1}
-        new_z_dot_z = np.dot(z, z)                       # new z · z
-        beta = new_z_dot_z / z_dot_z                     # beta = new_z·z / z·z
+        s = H.T @ r - lam * f
+        new_norm_s = np.dot(s, s)
+        beta = new_norm_s / norm_s
 
-        p = z + beta * p                                 # p_{i+1} = z_{i+1} + beta * p_i
-        z_dot_z = new_z_dot_z                            # update z · z
+        p = s + beta * p
+        norm_s = new_norm_s
 
-    return f, iterations, final_error
+    return f * g_norm, iterations, final_error

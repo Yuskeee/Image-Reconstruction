@@ -112,7 +112,7 @@ async def websocket(websocket: WebSocket):
     data = await websocket.receive_json() # recebe a mensagem do cliente, deserializa e armazena em um dic
 
     algorithm = data["algorithm"] # pega o algoritmo escolhido pelo cliente
-    signal = np.array(data["signal"], dtype=np.float32) # converte o sinal recebido em um array numpy
+    signal = np.array(data["signal"], dtype=np.float64) # converte o sinal recebido em um array numpy
 
     if len(signal) == 50816:
         H = matrix_manager.get("H-1") # carrega a matriz H-1 do cache

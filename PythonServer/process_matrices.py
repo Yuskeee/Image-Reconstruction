@@ -1,23 +1,23 @@
 import numpy as np
 
-matrixM = np.loadtxt('../Data/M.csv', delimiter=';', dtype=np.float32)
-matrixN = np.loadtxt('../Data/N.csv', delimiter=';', dtype=np.float32)
+matrixM = np.loadtxt('../Data/M.csv', delimiter=';', dtype=np.float64)
+matrixN = np.loadtxt('../Data/N.csv', delimiter=';', dtype=np.float64)
 
 matrixMN = matrixM@matrixN
 
-matrixResponse = np.loadtxt('../Data/MN.csv', delimiter=';', dtype=np.float32) 
+matrixResponse = np.loadtxt('../Data/MN.csv', delimiter=';', dtype=np.float64)
 
 if np.allclose(matrixMN, matrixResponse):
     print("Passed.")
 else:
     print("Failed.")
 
-matrixa = np.loadtxt('../Data/a.csv', delimiter=';', dtype=np.float32)
+matrixa = np.loadtxt('../Data/a.csv', delimiter=';', dtype=np.float64)
 
 matrixaM = matrixa@matrixM
 matrixMa = matrixM@matrixa
 
-matrixaMResponse = np.loadtxt('../Data/aM.csv', delimiter=';', dtype=np.float32)
+matrixaMResponse = np.loadtxt('../Data/aM.csv', delimiter=';', dtype=np.float64)
 
 
 if np.allclose(matrixaM, matrixaMResponse, atol=0.01):
