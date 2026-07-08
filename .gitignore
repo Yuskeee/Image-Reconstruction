@@ -4,3 +4,7 @@
 # Python
 __pycache__/
 *.pyc
+test_algo.py
+
+# Binaries
+*.bin

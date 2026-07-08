@@ -16,9 +16,8 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
   const [expanded, setExpanded] = useState(true);
   const [signalFiles, setSignalFiles] = useState('A-60x60-1.csv, G-1.csv, G-2.csv, A-30x30-1.csv, g-30x30-1.csv, g-30x30-2.csv');
   const [signalCount, setSignalCount] = useState(50);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<any>(null);
   const isRunningRef = useRef(isRunning);
-  const signalCountRef = useRef(0);
   const continueRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -96,6 +95,7 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
 
     setIsRunning(true);
     isRunningRef.current = true;
+    onRunningChange?.(true);
     onRunStart?.(signalCount * 4); // notifica o total de imagens esperadas antes de começar
 
     // 1. Pré-gerar a sequência de sinais para garantir tempos e ganhos idênticos
@@ -110,37 +110,56 @@ const SignalManager: React.FC<SignalManagerProps> = ({ onSignalSent, onResultRec
 
     // 2. Fase Python
     for (let i = 0; i < signalCount; i++) {
-      if (!isRunningRef.current) return;
+      if (!isRunningRef.current) {
+        onRunningChange?.(false);
+        return;
+      }
       const item = sequence[i];
       await new Promise(r => {
         timeoutRef.current = setTimeout(r, item.interval);
       });
-      if (!isRunningRef.current) return;
+      if (!isRunningRef.current) {
+        onRunningChange?.(false);
+        return;
+      }
       await sendSignalToBackend(item, 'Python', i + 1);
     }
 
     // Entrar em hold
-    if (!isRunningRef.current) return;
+    if (!isRunningRef.current) {
+      onRunningChange?.(false);
+      return;
+    }
     setIsHolding(true);
     await new Promise<void>(resolve => {
       continueRef.current = resolve;
     });
     setIsHolding(false);
-    if (!isRunningRef.current) return;
+    if (!isRunningRef.current) {
+      onRunningChange?.(false);
+      return;
+    }
 
     // 3. Fase Swift
     for (let i = 0; i < signalCount; i++) {
-      if (!isRunningRef.current) return;
+      if (!isRunningRef.current) {
+        onRunningChange?.(false);
+        return;
+      }
       const item = sequence[i];
       await new Promise(r => {
         timeoutRef.current = setTimeout(r, item.interval);
       });
-      if (!isRunningRef.current) return;
+      if (!isRunningRef.current) {
+        onRunningChange?.(false);
+        return;
+      }
       await sendSignalToBackend(item, 'Swift', i + 1);
     }
 
     setIsRunning(false);
     isRunningRef.current = false;
+    onRunningChange?.(false);
   };
 
   return (

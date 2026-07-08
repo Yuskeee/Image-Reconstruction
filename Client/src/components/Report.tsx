@@ -16,11 +16,13 @@ export interface ReconstructionResult {
   message: string;
   signalFile?: string;
   server: 'Swift' | 'Python';
+  gain?: string;
 }
 
 export interface PendingRequest {
   id: string;
   signalFile: string;
+  gain?: string;
 }
 
 interface ReportProps {
@@ -125,13 +127,31 @@ const Report: React.FC<ReportProps> = ({ results, pending = [] }) => {
                       {timeMs.toFixed(3)}
                     </span>
                   </div>
-                  
-                  <div className="col-span-2 pt-1 border-t border-zinc-800/60 mt-1 flex justify-between items-center">
-                    <span className="text-[10px] uppercase tracking-wider text-zinc-500">Final Error</span>
-                    <span className="font-mono text-xs text-zinc-400">{res.finalError.toExponential(4)}</span>
+
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-zinc-500 mb-0.5 block">Tamanho (Pixels)</span>
+                    <span className="font-mono text-sm text-zinc-300">
+                      {res.imageSize} px ({Math.round(Math.sqrt(res.imageSize))}x{Math.round(Math.sqrt(res.imageSize))})
+                    </span>
                   </div>
 
-
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-zinc-500 mb-0.5 block">Erro Final</span>
+                    <span className="font-mono text-sm text-zinc-300">
+                      {res.finalError.toExponential(4)}
+                    </span>
+                  </div>
+                  
+                  <div className="col-span-2 pt-1 border-t border-zinc-800/60 mt-1 space-y-1">
+                    <div className="flex justify-between text-[10px] text-zinc-500">
+                      <span>Início:</span>
+                      <span className="font-mono">{new Date(res.startTime).toLocaleTimeString()} ({new Date(res.startTime).toLocaleDateString()})</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] text-zinc-500">
+                      <span>Término:</span>
+                      <span className="font-mono">{new Date(res.endTime).toLocaleTimeString()} ({new Date(res.endTime).toLocaleDateString()})</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

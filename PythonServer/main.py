@@ -147,7 +147,7 @@ async def websocket(websocket: WebSocket):
         "algorithm": algorithm,
         "startTime": start_time.isoformat(),
         "endTime": end_time.isoformat(),
-        "imageSize": image_size,
+        "imageSize": len(f),
         "iterations": iterations,
         "image": transposed_f.tolist(), # converte o array numpy transposto em uma lista
         "finalError": float(final_error),

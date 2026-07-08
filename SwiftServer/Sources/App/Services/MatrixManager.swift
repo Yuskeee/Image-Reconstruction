@@ -9,28 +9,48 @@ public struct ModelMatrix {
     
     public func multiply(vector x: [Double]) -> [Double] {
         var y = [Double](repeating: 0.0, count: rows)
-        for i in 0..<rows {
-            let start = Int(rowPointers[i])
-            let end = Int(rowPointers[i + 1])
-            var sum = 0.0
-            for j in start..<end {
-                let col = Int(colIndices[j])
-                sum += values[j] * x[col]
+        
+        values.withUnsafeBufferPointer { vPtr in
+            colIndices.withUnsafeBufferPointer { cPtr in
+                rowPointers.withUnsafeBufferPointer { rPtr in
+                    x.withUnsafeBufferPointer { xPtr in
+                        y.withUnsafeMutableBufferPointer { yPtr in
+                            for i in 0..<rows {
+                                let start = Int(rPtr[i])
+                                let end = Int(rPtr[i + 1])
+                                var sum = 0.0
+                                for j in start..<end {
+                                    sum += vPtr[j] * xPtr[Int(cPtr[j])]
+                                }
+                                yPtr[i] = sum
+                            }
+                        }
+                    }
+                }
             }
-            y[i] = sum
         }
         return y
     }
     
     public func multiplyTranspose(vector x: [Double]) -> [Double] {
         var y = [Double](repeating: 0.0, count: cols)
-        for i in 0..<rows {
-            let start = Int(rowPointers[i])
-            let end = Int(rowPointers[i + 1])
-            let xi = x[i]
-            for j in start..<end {
-                let col = Int(colIndices[j])
-                y[col] += values[j] * xi
+        
+        values.withUnsafeBufferPointer { vPtr in
+            colIndices.withUnsafeBufferPointer { cPtr in
+                rowPointers.withUnsafeBufferPointer { rPtr in
+                    x.withUnsafeBufferPointer { xPtr in
+                        y.withUnsafeMutableBufferPointer { yPtr in
+                            for i in 0..<rows {
+                                let start = Int(rPtr[i])
+                                let end = Int(rPtr[i + 1])
+                                let xi = xPtr[i]
+                                for j in start..<end {
+                                    yPtr[Int(cPtr[j])] += vPtr[j] * xi
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         return y
@@ -46,6 +66,53 @@ public actor MatrixManager {
     
     public func getMatrix(named name: String) async throws -> ModelMatrix {
         if let matrix = matrices[name] {
+            return matrix
+        }
+        
+        let binPath = "../Data/\(name).bin"
+        if FileManager.default.fileExists(atPath: binPath) {
+            await LogStore.shared.add("Carregando matriz esparsa \(name) do arquivo binário super-rápido...")
+            
+            let data = try Data(contentsOf: URL(fileURLWithPath: binPath), options: .mappedIfSafe)
+            var offset = 0
+            
+            let rowsTotal = Int(data.subdata(in: offset..<offset+8).withUnsafeBytes { $0.load(as: Int64.self) })
+            offset += 8
+            let colsTotal = Int(data.subdata(in: offset..<offset+8).withUnsafeBytes { $0.load(as: Int64.self) })
+            offset += 8
+            let nnz = Int(data.subdata(in: offset..<offset+8).withUnsafeBytes { $0.load(as: Int64.self) })
+            offset += 8
+            
+            let values = [Double](unsafeUninitializedCapacity: nnz) { buffer, initializedCount in
+                let size = nnz * MemoryLayout<Double>.stride
+                data.withUnsafeBytes { ptr in
+                    memcpy(buffer.baseAddress!, ptr.baseAddress! + offset, size)
+                }
+                initializedCount = nnz
+            }
+            offset += nnz * MemoryLayout<Double>.stride
+            
+            let colIndices = [Int32](unsafeUninitializedCapacity: nnz) { buffer, initializedCount in
+                let size = nnz * MemoryLayout<Int32>.stride
+                data.withUnsafeBytes { ptr in
+                    memcpy(buffer.baseAddress!, ptr.baseAddress! + offset, size)
+                }
+                initializedCount = nnz
+            }
+            offset += nnz * MemoryLayout<Int32>.stride
+            
+            let rowPointersCount = rowsTotal + 1
+            let rowPointers = [Int32](unsafeUninitializedCapacity: rowPointersCount) { buffer, initializedCount in
+                let size = rowPointersCount * MemoryLayout<Int32>.stride
+                data.withUnsafeBytes { ptr in
+                    memcpy(buffer.baseAddress!, ptr.baseAddress! + offset, size)
+                }
+                initializedCount = rowPointersCount
+            }
+            
+            let matrix = ModelMatrix(values: values, colIndices: colIndices, rowPointers: rowPointers, rows: rowsTotal, cols: colsTotal)
+            matrices[name] = matrix
+            await LogStore.shared.add("Matriz \(name) carregada com sucesso do binário em ms.")
             return matrix
         }
         
@@ -110,7 +177,7 @@ public actor MatrixManager {
         
         let matrix = ModelMatrix(values: values, colIndices: colIndices, rowPointers: rowPointers, rows: rowsTotal, cols: colsTotal)
         matrices[name] = matrix
-        await LogStore.shared.add("Matriz \(name) carregada com sucesso. Dimensões: \(rowsTotal)x\(colsTotal) (\(values.count) elementos não-zero).")
+        await LogStore.shared.add("Matriz \(name) carregada com sucesso do CSV. Dimensões: \(rowsTotal)x\(colsTotal) (\(values.count) elementos não-zero).")
         return matrix
     }
 }

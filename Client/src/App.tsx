@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import SignalManager from './components/SignalManager';
 import Report from './components/Report';
 import Dashboard from './components/Dashboard';
