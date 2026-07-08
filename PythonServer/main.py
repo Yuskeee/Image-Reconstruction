@@ -124,24 +124,23 @@ async def websocket(websocket: WebSocket):
         await websocket.send_json({"error": "Invalid signal length"})
         await websocket.close()
         return
-    
-    start_time = datetime.now(timezone.utc) # marca o tempo de início da execução do algoritmo
-    t0 = time.perf_counter() # marca o tempo de início da execução do algoritmo em alta resolução
 
     await queue.enqueue()
     try:
         loop = asyncio.get_running_loop()
+
+        start_time = datetime.now(timezone.utc) # marca o tempo de início da execução do algoritmo
+
         if algorithm == "CGNE":
             f, iterations, final_error = await loop.run_in_executor(executor, cgne, H, signal) # executa o algoritmo CGNE
         elif algorithm == "CGNR":
             f, iterations, final_error = await loop.run_in_executor(executor, cgnr, H, signal) # executa o algoritmo CGNR
+
+        end_time = datetime.now(timezone.utc) # marca o tempo de término da execução do algoritmo em UTC
     finally:
         queue.dequeue()
 
     transposed_f = f.reshape((image_size, image_size)).T.flatten()
-
-    t1 = time.perf_counter() # marca o tempo de término da execução do algoritmo em alta resolução
-    end_time = datetime.now(timezone.utc) # marca o tempo de término da execução do algoritmo em UTC
 
     response = {
         "algorithm": algorithm,
